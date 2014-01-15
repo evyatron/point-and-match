@@ -251,7 +251,6 @@ var App = (function() {
     this.getData = getData;
     this.addRequest = addRequest;
     this.removeRequest = removeRequest;
-    this.setUser = setUser;
 
     function init(options) {
       !options && (options = {});
@@ -263,17 +262,54 @@ var App = (function() {
       cbNewRequest = options.onNewRequest || function(){};
       cbDeleteRequest = options.onDeleteRequest || function(){};
 
-      if (id) {
-        verifyUser(onPlayerReady);
-      } else {
-        getFromStorage(function onReady() {
-          if (id) {
-            onPlayerReady();
-          } else {
-            newUser(onPlayerReady);
-          }
-        });
-      }
+      verifyUser();
+    }
+
+    function verifyUser() {
+      firebaseRef = firebaseBase.child('users').child(id);
+
+      firebaseRef.once('value', function(data) {
+        data = data.val() || {};
+
+        // user not in DB - create them
+        if (!data.name) {
+          firebaseRef.child('name').set(name);
+        }
+        if (!data.id) {
+          firebaseRef.child('id').set(id);
+        }
+
+        // indicate user is now online
+        firebaseRef.child('online').set(true);
+
+        onPlayerReady();
+      });
+    }
+
+    function onPlayerReady() {
+      console.log('Player ready: ', getData());
+
+      // when disconnecting: change status to "offline" and delete all requests
+      firebaseRef.onDisconnect().update({
+        'online': false,
+        'requests-out': null,
+        'requests-in': null
+      });
+
+      // notify when other users want to match
+      firebaseRef.child('requests-in').on('child_added', function(snapshot) {
+        // .name because we add an object here that the requesting user's ID is its key
+        var user = snapshot.name();
+        cbNewRequest(user);
+      });
+      
+      // notify when a request has been canceled
+      firebaseRef.child('requests-in').on('child_removed', function(snapshot) {
+        var user = snapshot.name();
+        cbDeleteRequest(user);
+      });
+
+      cbReady();
     }
 
     function getData() {
@@ -285,116 +321,15 @@ var App = (function() {
     }
 
     function addRequest(userId) {
-      firebaseRef.child('requests-out').child(userId).set(REQUEST_STATUS.PENDING);
+      setRequestStatus(userId, REQUEST_STATUS.PENDING);
     }
 
     function removeRequest(userId) {
-      firebaseRef.child('requests-out').child(userId).set(REQUEST_STATUS.CANCEL);
+      setRequestStatus(userId, REQUEST_STATUS.CANCEL);
     }
 
-    function onPlayerReady() {
-      console.log('Player ready: ', getData());
-
-      // change status to "offline" when disconnecting
-      firebaseRef.onDisconnect().update({
-        'online': false,
-        'requests-out': {}
-      });
-
-      // notify when other users want to match
-      firebaseRef.child('requests-in').on('child_added', function(snapshot) {
-        // .name because we add an object here that the requesting user's ID is its key
-        var user = snapshot.name();
-        cbNewRequest(user);
-      });
-      // notify when a request has been deleted
-      firebaseRef.child('requests-in').on('child_removed', function(snapshot) {
-        var user = snapshot.name();
-        cbDeleteRequest(user);
-      });
-
-      cbReady();
-    }
-
-    function verifyUser(onReady) {
-      firebaseRef = firebaseBase.child('users').child(id);
-
-      // see if this user exists in the DB
-      // if not - let's create it!
-      firebaseRef.once('value', function(data) {
-        data = data.val();
-
-        if (data && data.id) {
-          name = data.name;
-
-          firebaseRef.update({
-            'online': true,
-            'requests-in': {}
-          }, onReady);
-        } else {
-          save();
-        }
-      });
-    }
-
-    function getFromStorage(onReady) {
-      id = Storage.get(USER_ID_KEY);
-
-      if (id) {
-        verifyUser();
-      } else {
-        onReady();
-      }
-
-      return !!id;
-    }
-
-    function newUser(onReady) {
-      id = window.URL.createObjectURL(new Blob());
-      id = id.replace('blob:', '');
-      id = id.split('/');
-      id = id[id.length - 1];
-      name = '';
-
-      Storage.set(USER_ID_KEY, id);
-
-
-      // save an initial user to Firebase
-      save();
-
-      return true;
-    }
-
-    function save() {
-      if (!id) {
-        return;
-      }
-
-      if (!firebaseRef) {
-        firebaseRef = firebaseBase.child('users').child(id);
-      }
-
-      var data = {
-        'id': id,
-        'name': name,
-        'online': true,
-        'requests-in': {}
-      };
-
-      firebaseRef.set(data, onPlayerReady);
-    }
-
-    function setUser(newUserData) {
-      userData = newUserData;
-
-      name = userData.displayName;
-
-      var data = {
-        'name': name,
-        'online': true
-      };
-
-      firebaseRef.update(data);
+    function setRequestStatus(userId, status) {
+      firebaseRef.child('requests-out').child(userId).set(status);
     }
 
     init(options);

@@ -75,6 +75,9 @@ b {
     border-bottom: 1px solid #000;
     margin-bottom: 10px;
   }
+    #me h2 img {
+      vertical-align: middle;
+    }
   #me ul {
     margin-left: 20px;
   }
