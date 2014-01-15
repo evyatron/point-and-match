@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Point and Match</title>
+
+    <meta name="author" content="Evyatar Amitay" />
+
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600" rel="stylesheet" type="text/css" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1" />
+
+    <link href="style/style.css" rel="stylesheet" />
+
+    <!-- I'm on GitHub! https://github.com/evyatron/point-and-match -->
+  </head>
+  <body>
+    <div id="container">
+      <div id="users">
+        <h2>Online Users</h2>
+        <ul></ul>
+      </div>
+
+      <div id="me">
+        <h2 class="name">Me:</h2>
+        <ul class="invites"></ul>
+      </div>
+
+      <div id="login" class="button">Login</div>
+
+      <div id="new">
+        <input id="name" id="name" value="" placeholder="What are you drawing?" />
+        <b id="send">Send</b>
+      </div>
+    </div>
+
+    <script src='//cdn.firebase.com/v0/firebase.js'></script>
+    <script src='//cdn.firebase.com/v0/firebase-simple-login.js'></script>
+    <script src="script/app.js"></script>
+    <script>
+      App.init({
+        'firebase': {
+          'id': 'https://point-and-match.firebaseio.com'
+        }
+      });
+    </script>
+  </body>
+</html>
+
+
