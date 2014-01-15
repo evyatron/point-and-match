@@ -70,6 +70,14 @@ b {
   border: 1px solid #666;
   border-width: 0 0 1px 1px;
   border-bottom-left-radius: 5px;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-transition: all 200ms ease-in-out;
+  transition: all 200ms ease-in-out;
+}
+.logged-in #me {
+  opacity: 1;
+  pointer-events: inherit;
 }
   #me h2 {
     border-bottom: 1px solid #000;

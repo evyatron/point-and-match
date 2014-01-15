@@ -46,6 +46,10 @@ var App = (function() {
     });
   }
 
+  function logoutPlayer() {
+    firebaseAuth.logout();
+  }
+
   function onPlayerReady() {
     var playerData = player.getData(),
         elName = document.querySelector('#me .name');
@@ -96,21 +100,28 @@ var App = (function() {
   }
 
   function onPlayreNewRequest(requestingUserId) {
-    var el = document.createElement('li');
-    el.dataset.userId = requestingUserId;
-    el.innerHTML = 'New request from: <b>' + requestingUserId + '</b>';
-    el.addEventListener('click', function onAcceptClick(e) {
+    firebaseBase.child('users').child(requestingUserId).once('value', function onGotUser(user) {
+      user = user.val();
+      if (!user) {
+        return;
+      }
+      
+      var el = document.createElement('li');
 
+      el.dataset.userId = requestingUserId;
+      el.innerHTML = 'New request from: <b>' + user.name + '</b>';
+      el.addEventListener('click', function onAcceptClick(e) {
+        // handle accept request
+      });
+
+      var elList = document.querySelector('#me .invites');
+      elList.insertBefore(el, elList.firstChild);
+
+      var elUserFromList = UserList.getUserElement(user.id);
+      if (elUserFromList) {
+        elUserFromList.classList.add('request-pending');
+      }
     });
-
-    var elList = document.querySelector('#me .invites');
-    elList.insertBefore(el, elList.firstChild);
-
-    var elUserFromList = UserList.getUserElement(requestingUserId);
-    console.log(elUserFromList);
-    if (elUserFromList) {
-      elUserFromList.classList.add('request-pending');
-    }
   }
 
   function onPlayerDeleteRequest(requestingUserId) {
@@ -155,23 +166,23 @@ var App = (function() {
     }
 
     function listenToChanges() {
-      firebaseRef = firebaseBase.child('users/');
-      firebaseRef.on('child_changed', function(snapshot, prevChildName) {
+      firebaseBase.child('users').on('child_changed', function(snapshot, prevChildName) {
         var user = snapshot.val();
         
-        if (user.id !== player.getData().id) {
-          if (user.online) {
-            addUser(user)
-          } else {
-            removeUser(user);
-          }
+        if (user.id === player.getData().id) {
+          return;
+        }
+
+        if (user.online) {
+          addUser(user)
+        } else {
+          removeUser(user);
         }
       });
     }
 
     function update() {
-      firebaseRef = firebaseBase.child('users/');
-      firebaseRef.on('child_added', function(snapshot) {
+      firebaseBase.child('users').on('child_added', function(snapshot) {
         var user = snapshot.val();
         if (user.online && user.id !== player.getData().id) {
           addUser(snapshot.val());
@@ -182,16 +193,16 @@ var App = (function() {
     function addUser(user) {
       var li = getUserElement(user.id);
       if (li) {
-        li = li.parentNode.removeChild(li);
-      } else {
-        li = document.createElement('li');
-
-        li.dataset.id = user.id;
-        li.innerHTML = '<div class="name">' +
-                         (user.name || user.id) +
-                         '<b class="button match">Match</b>' +
-                       '</div>';
+        return;
       }
+
+      li = document.createElement('li');
+
+      li.dataset.id = user.id;
+      li.innerHTML = '<div class="name">' +
+                       (user.name || user.id) +
+                       '<b class="button match">Match</b>' +
+                     '</div>';
 
       el.insertBefore(li, el.firstChild);
     }
@@ -262,10 +273,10 @@ var App = (function() {
       cbNewRequest = options.onNewRequest || function(){};
       cbDeleteRequest = options.onDeleteRequest || function(){};
 
-      verifyUser();
+      verify();
     }
 
-    function verifyUser() {
+    function verify() {
       firebaseRef = firebaseBase.child('users').child(id);
 
       firebaseRef.once('value', function(data) {
@@ -298,15 +309,12 @@ var App = (function() {
 
       // notify when other users want to match
       firebaseRef.child('requests-in').on('child_added', function(snapshot) {
-        // .name because we add an object here that the requesting user's ID is its key
-        var user = snapshot.name();
-        cbNewRequest(user);
+        cbNewRequest(snapshot.name());
       });
       
       // notify when a request has been canceled
       firebaseRef.child('requests-in').on('child_removed', function(snapshot) {
-        var user = snapshot.name();
-        cbDeleteRequest(user);
+        cbDeleteRequest(snapshot.name());
       });
 
       cbReady();
@@ -365,7 +373,8 @@ var App = (function() {
 
   return {
     init: init,
-    newGame: newGame
+    newGame: newGame,
+    logoutPlayer: logoutPlayer
   };
 }());
 
