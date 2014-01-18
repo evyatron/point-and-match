@@ -20,21 +20,42 @@
         <ul></ul>
       </div>
 
-      <div id="me">
+      <div id="me" class="need-login">
         <h2 class="name">Me:</h2>
         <ul class="invites"></ul>
       </div>
 
-      <div id="login" class="button">Login</div>
+      <div id="login">
+        <div id="login-facebook" class="button">With Facebook</div>
+        <b>or</b>
+        <div id="login-twitter" class="button">With Twitter</div>
+      </div>
+
+      <div id="new-button" class="need-login">New</div>
 
       <div id="new">
-        <input id="name" id="name" value="" placeholder="What are you drawing?" />
-        <b id="send">Send</b>
+        <div id="drawing">
+          <b class="corner tl"></b>
+          <b class="corner tr"></b>
+          <b class="corner br"></b>
+          <b class="corner bl"></b>
+        </div>
+        <div id="actions">
+          <input id="name" id="name" value="" placeholder="What are you drawing?" />
+          <b id="send" class="button">Send</b>
+        </div>
       </div>
     </div>
 
-    <script src='//cdn.firebase.com/v0/firebase.js'></script>
-    <script src='//cdn.firebase.com/v0/firebase-simple-login.js'></script>
+    <script src="//cdn.firebase.com/v0/firebase.js"></script>
+    <script src="//cdn.firebase.com/v0/firebase-simple-login.js"></script>
+
+    <script src="script/drawing/TouchHandler.js"></script>
+    <script src="script/drawing/Path.js"></script>
+    <script src="script/drawing/Canvas.js"></script>
+    <script src="script/drawing/Drawing.js"></script>
+    <script src="script/drawing/DrawingPlayer.js"></script>
+
     <script src="script/app.js"></script>
     <script>
       App.init({

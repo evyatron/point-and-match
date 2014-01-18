@@ -13,11 +13,18 @@ var App = (function() {
         NEW: 1
       };
 
+  // just a small helper object, so all objects can use this instead of
+  // binding directly to mouse or touch events
+  var hasTouch = 'ontouchstart' in document.body;
+  window.EVENTS = {
+    POINTER_DOWN: hasTouch? 'touchstart' : 'mousedown',
+    POINTER_MOVE: hasTouch? 'touchmove' : 'mousemove',
+    POINTER_END: hasTouch? 'touchend' : 'mouseup'
+  };
+
   function init(options) {
     firebaseBase = new Firebase(options.firebase.id);
     firebaseAuth = new FirebaseSimpleLogin(firebaseBase, onAuthChange);
-
-    document.querySelector('#login').addEventListener('click', loginPlayer);
   }
 
   function onAuthChange(error, user) {
@@ -32,16 +39,24 @@ var App = (function() {
         'onDeleteRequest': onPlayerDeleteRequest
       });
 
+      document.querySelector('#new-button').addEventListener('click', newGame);
+
       document.body.classList.remove('not-logged-in');
       document.body.classList.add('logged-in');
     } else {
+      document.querySelector('#login-facebook').addEventListener('click', loginPlayerFacebook);
+      document.querySelector('#login-twitter').addEventListener('click', loginPlayerTwitter);
+
       document.body.classList.remove('logged-in');
       document.body.classList.add('not-logged-in');
     }
   }
 
-  function loginPlayer() {
-    firebaseAuth.login('facebook', {
+  function loginPlayerFacebook() { loginPlayer('facebook'); }
+  function loginPlayerTwitter() { loginPlayer('twitter'); }
+
+  function loginPlayer(provider) {
+    firebaseAuth.login(provider, {
       rememberMe: true
     });
   }
@@ -355,10 +370,19 @@ var App = (function() {
             status: GAME_STATUS.NEW
           };
 
-      firebaseRef = firebaseGames.push(data);
-      id = firebaseRef.name();
+      //firebaseRef = firebaseGames.push(data);
+      //id = firebaseRef.name();
 
-      console.log(firebaseRef.name(), firebaseRef);
+      initDrawing();
+    }
+
+    function initDrawing() {
+      player.drawing = new Drawing({
+        'elContainer': document.querySelector('#drawing'),
+        'type': 'save'
+      });
+
+      document.querySelector('#new').classList.add('visible');
     }
 
     init(options);
